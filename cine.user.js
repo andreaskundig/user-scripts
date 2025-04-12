@@ -21,7 +21,8 @@ function extractFilmInfo(filmArticle) {
 
   // Extract film title
   const titleElement = filmArticle.querySelector(".kino-show-title a");
-  const title = titleElement ? titleElement.textContent.trim() : "Unknown Title";
+  const titleRaw = titleElement ? titleElement.textContent.trim() : "Unknown Title";
+  const title = titleRaw.replace(/ ?\(.*\)$/,'');
 
   // Extract genre information
   const genreElement = filmArticle.querySelector(".kino-genre");
@@ -42,7 +43,8 @@ function extractFilmInfo(filmArticle) {
     const screenElement = row.querySelector(".kino-screen");
     const screenText = screenElement ? screenElement.textContent.trim() : "";
     // Extract screen number if present (after the cinema name)
-    const screenNumber = screenText.replace(cinemaName, "").trim();
+    const screenNumberRaw = screenText.replace(cinemaName, "").trim();
+    const screenNumber = screenNumberRaw.replace(/ ?\(Genève\)/,'');
     const cinemaNameNumber = cinemaName + ' ' + screenNumber;
 
     const hoursElement = row.querySelector(".kino-hours");
@@ -135,7 +137,7 @@ const filmData = {
 
 function compareFilms(a, b) {
   if(!!a.review === !!b.review ){
-    a.title.localeCompare(b.title);
+    return a.title.localeCompare(b.title);
   } else if(a.review){
     return -1;
   }
@@ -193,7 +195,7 @@ function parseArticles(htmlString) {
 function articlesToMap(articles) {
   return articles.reduce((acc, article) => {
     const filmTitle =  article.filmTitle;
-    if(filmTitle){
+    if(filmTitle && !acc[filmTitle]){
       acc[filmTitle] = article;
     }
     return acc;
@@ -261,7 +263,7 @@ function injectModalStyles() {
   document.head.appendChild(style);
 }
 
-function createModal(films, reviewsMap) {
+function createModal(films) {
   const modal = document.createElement('div');
   modal.className = 'film-modal';
 
@@ -281,9 +283,8 @@ function createModal(films, reviewsMap) {
 
     const filmReview = document.createElement('div');
     filmReview.className = 'film-review';
-    const review = reviewsMap[film.title];
-    if (review) {
-      filmReview.textContent = review.lead;
+    if (film.review) {
+      filmReview.textContent = film.review.lead;
     }
 
     const cinemaList = document.createElement('div');
@@ -367,7 +368,6 @@ async function main(){
     'https://search.ch/cine/Carouge'
   ];
   window.films = await fetchAllFilms(urls);
-  // window.reviews = await fetchReviews();
   window.reviews = await fetchAllReviews();
   const reviewsMap = articlesToMap(window.reviews);
   const films = mergeFilmReviews(window.films, reviewsMap);
