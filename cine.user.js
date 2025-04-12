@@ -273,7 +273,14 @@ function createModal(films) {
   const close = document.createElement('span');
   close.className = 'film-close';
   close.innerHTML = '&times;';
-  close.onclick = () => modal.remove();
+  const removeModal = (e) => {
+    e.preventDefault();
+    modal.remove();
+  };
+  close.addEventListener('click', removeModal);
+  close.addEventListener('touchstart', removeModal, { passive: false });
+
+
   content.appendChild(close);
 
   for (const film of films) {
@@ -303,9 +310,12 @@ function createModal(films) {
       cinemaList.appendChild(cinemaDiv);
     }
 
-    filmHeader.onclick = () => {
+    const toggleDisplay =  (e) => {
+      e.preventDefault();
       cinemaList.style.display = (cinemaList.style.display === 'none') ? 'block' : 'none';
     };
+    filmHeader.addEventListener('click', toggleDisplay);
+    filmHeader.addEventListener('touchstart', toggleDisplay, { passive: false });
 
     content.appendChild(filmHeader);
     content.appendChild(filmReview);
@@ -316,51 +326,6 @@ function createModal(films) {
   document.body.appendChild(modal);
 }
 
-function createModal0(data) {
-  const modal = document.createElement('div');
-  modal.className = 'film-modal';
-
-  const content = document.createElement('div');
-  content.className = 'film-modal-content';
-
-  const close = document.createElement('span');
-  close.className = 'film-close';
-  close.innerHTML = '&times;';
-  close.onclick = () => modal.remove();
-  content.appendChild(close);
-
-  for (const [filmTitle, cinemas] of Object.entries(data)) {
-    const filmHeader = document.createElement('div');
-    filmHeader.className = 'film-title';
-    filmHeader.textContent = filmTitle;
-
-    const cinemaList = document.createElement('div');
-    cinemaList.style.display = 'none';
-
-    for (const [cinema, info] of Object.entries(cinemas)) {
-      const cinemaDiv = document.createElement('div');
-      cinemaDiv.className = 'cinema';
-      cinemaDiv.innerHTML = `<strong>${cinema}</strong> (${info.language})`;
-
-      const times = document.createElement('div');
-      times.className = 'showtimes';
-      times.textContent = info.showtimes.join(', ');
-
-      cinemaDiv.appendChild(times);
-      cinemaList.appendChild(cinemaDiv);
-    }
-
-    filmHeader.onclick = () => {
-      cinemaList.style.display = (cinemaList.style.display === 'none') ? 'block' : 'none';
-    };
-
-    content.appendChild(filmHeader);
-    content.appendChild(cinemaList);
-  }
-
-  modal.appendChild(content);
-  document.body.appendChild(modal);
-}
 
 async function main(){
   const urls = [
