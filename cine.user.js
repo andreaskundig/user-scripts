@@ -250,12 +250,20 @@ function injectModalStyles() {
       margin-top: 20px;
       cursor: pointer;
     }
+    .film-review {
+      margin-top: 5px;
+      cursor: pointer;
+    }
     .cinema {
       margin-left: 20px;
       margin-top: 5px;
+      display: flex
     }
     .showtimes {
+      /*
       margin-left: 40px;
+      */
+      margin-left: 5px;
       font-style: italic;
       color: #aaa;
     }
@@ -300,12 +308,14 @@ function createModal(films) {
     for (const cinema of film.cinemas) {
       const cinemaDiv = document.createElement('div');
       cinemaDiv.className = 'cinema';
-      cinemaDiv.innerHTML = `<strong>${cinema.name}</strong> (${cinema.language})`;
+      const cinemaName = document.createElement('div');
+      cinemaName.innerHTML = `<strong>${cinema.name}</strong> (${cinema.language})`;
 
       const times = document.createElement('div');
       times.className = 'showtimes';
       times.textContent = cinema.showtimes.join(', ');
 
+      cinemaDiv.appendChild(cinemaName);
       cinemaDiv.appendChild(times);
       cinemaList.appendChild(cinemaDiv);
     }
@@ -326,7 +336,6 @@ function createModal(films) {
   document.body.appendChild(modal);
 }
 
-
 async function main(){
   const urls = [
     'https://search.ch/cine/Gen%C3%A8ve',
@@ -336,8 +345,8 @@ async function main(){
   window.reviews = await fetchAllReviews();
   const reviewsMap = articlesToMap(window.reviews);
   const films = mergeFilmReviews(window.films, reviewsMap);
-  createModal(films, reviewsMap);
   injectModalStyles();
+  createModal(films, reviewsMap);
 }
 
 window.fetchReviews = fetchReviews;
