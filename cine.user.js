@@ -2,7 +2,7 @@
 // @name        cine
 // @namespace   Violentmonkey Scripts
 // @match       https://search.ch/cine/*
-// @grant       none
+// @grant       GM_xmlhttpRequest
 // @version     1.0
 // @author      -
 // @description 12.04.2025, 10:42:54
@@ -62,22 +62,9 @@ function extractFilmInfo(filmArticle) {
     const languageElement = row.querySelector(".kino-spoken");
     const language = languageElement ? languageElement.textContent.trim() : "";
 
-    // const ageElement = row.querySelector(".kino-age");
-    // const ageRating = ageElement ? ageElement.textContent.trim() : "";
-
-    // const seatsElement = row.querySelector(".kino-seats");
-    // const seats = seatsElement ? seatsElement.textContent.trim() : "";
-
-    // const isAccessible = !!row.querySelector(".kino-accessible .sl-icon-accessible");
-
     showings[cinemaNameNumber] = {
-      // cinema: cinemaNameNumber,
-      // screen: screenNumber,
       showtimes: hours,
       language,
-      // ageRating,
-      // seats,
-      // isAccessible
     };
   });
 
@@ -89,11 +76,24 @@ function extractFilmInfo(filmArticle) {
   };
 }
 
-async function fetchHtmlAsDom(url){
-  const r = await fetch(url);
-  const data = await r.text();
-  return new DOMParser().parseFromString(data, 'text/html');
+function desktopFetch(url) {
+  return new Promise((resolve, reject) => {
+    GM_xmlhttpRequest({
+      method: 'GET',
+      url,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
+      },
+      responseType: 'text/html',
+      onload: res => resolve(res.responseText),
+      onerror: error => reject(error)
+    });
+  });
 }
+
+const dom = text => new DOMParser().parseFromString(text, 'text/html');
+// const fetchHtmlAsDom = async url => dom(await(await fetch(url)).text());
+const fetchHtmlAsDom = async url => dom(await desktopFetch(url));
 
 async function fetchFilms(url){
     const dom = await fetchHtmlAsDom(url);
@@ -168,6 +168,17 @@ function mergeFilmReviews(filmData, reviewsMap) {
 
   return films;
 }
+
+function reviewToFilmTitle(fullTitle) {
+  let filmTitle = fullTitle.trim();
+  // Extract film title (the text inside quotes)
+  filmTitle = filmTitle.match(/«([^»]+)»/);
+  if (filmTitle) {
+    return filmTitle[1].replaceAll("’", "'");
+  }
+  return null;
+}
+
 function parseArticles(htmlString) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlString, 'text/html');
@@ -177,13 +188,11 @@ function parseArticles(htmlString) {
     const titleAnchor = article.querySelector('.post__title a');
     const lead = article.querySelector('.post__lead p');
     if (titleAnchor) {
-      // Extract the title with quotes
       const fullTitle = titleAnchor.textContent.trim();
-      // Extract film title (the text inside quotes)
-      const filmTitle = fullTitle.match(/«([^»]+)»/);
+      const filmTitle = reviewToFilmTitle(fullTitle);
       articles.push({
         title: fullTitle,
-        filmTitle: filmTitle ? filmTitle[1] : null, // Film title inside quotes
+        filmTitle: filmTitle,
         href: titleAnchor.getAttribute('href'),
         lead: lead ? lead.textContent.trim() : ''
       });
@@ -228,6 +237,7 @@ function injectModalStyles() {
       background: rgba(0,0,0,0.8);
       color: white;
       font-family: sans-serif;
+      line-height: 1.3;
       z-index: 10000;
       overflow: auto;
       padding: 20px;
@@ -251,7 +261,7 @@ function injectModalStyles() {
       cursor: pointer;
     }
     .film-review {
-      margin-top: 5px;
+      margin-top: 0px;
       cursor: pointer;
     }
     .cinema {
@@ -341,15 +351,13 @@ async function main(){
     'https://search.ch/cine/Gen%C3%A8ve',
     'https://search.ch/cine/Carouge'
   ];
-  window.films = await fetchAllFilms(urls);
-  window.reviews = await fetchAllReviews();
-  const reviewsMap = articlesToMap(window.reviews);
-  const films = mergeFilmReviews(window.films, reviewsMap);
+  const films = await fetchAllFilms(urls);
+  const reviews = await fetchAllReviews();
+  const reviewsMap = articlesToMap(reviews);
+  // alert(reviews.map(r => r.filmTitle).join('\n'));
+  const mergedFilms = mergeFilmReviews(films, reviewsMap);
   injectModalStyles();
-  createModal(films, reviewsMap);
+  createModal(mergedFilms, reviewsMap);
 }
-
-window.fetchReviews = fetchReviews;
-window.fetchAllReviews = fetchAllReviews;
 
 main();
