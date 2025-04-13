@@ -154,8 +154,9 @@ function mergeFilmReviews(filmData, reviewsMap) {
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
     // Add review if available
-    const review = reviewsMap[title];
-    film = { title, cinemas };
+    const filmTitleKey = makeFilmTitleKey(title);
+    const review = reviewsMap[filmTitleKey];
+    const film = { title, cinemas };
     if (review) {
       film.review = review;
     }
@@ -173,10 +174,7 @@ function reviewToFilmTitle(fullTitle) {
   let filmTitle = fullTitle.trim();
   // Extract film title (the text inside quotes)
   filmTitle = filmTitle.match(/«([^»]+)»/);
-  if (filmTitle) {
-    return filmTitle[1].replaceAll("’", "'");
-  }
-  return null;
+  return filmTitle ? filmTitle[1] : null;
 }
 
 function parseArticles(htmlString) {
@@ -193,6 +191,7 @@ function parseArticles(htmlString) {
       articles.push({
         title: fullTitle,
         filmTitle: filmTitle,
+        key: makeFilmTitleKey(filmTitle),
         href: titleAnchor.getAttribute('href'),
         lead: lead ? lead.textContent.trim() : ''
       });
@@ -201,11 +200,16 @@ function parseArticles(htmlString) {
   return articles;
 }
 
+function makeFilmTitleKey(filmTitle) {
+  if (!filmTitle) return null;
+  return filmTitle.toLowerCase().replaceAll("’", "'");
+}
+
 function articlesToMap(articles) {
   return articles.reduce((acc, article) => {
-    const filmTitle =  article.filmTitle;
-    if(filmTitle && !acc[filmTitle]){
-      acc[filmTitle] = article;
+    const filmTitleKey =  article.key;
+    if(filmTitleKey && !acc[filmTitleKey]){
+      acc[filmTitleKey] = article;
     }
     return acc;
   }, {});
@@ -351,9 +355,10 @@ async function main(){
     'https://search.ch/cine/Gen%C3%A8ve',
     'https://search.ch/cine/Carouge'
   ];
-  const films = await fetchAllFilms(urls);
-  const reviews = await fetchAllReviews();
-  const reviewsMap = articlesToMap(reviews);
+  // global variables, accessible from the console
+  films = await fetchAllFilms(urls);
+  reviews = await fetchAllReviews();
+  reviewsMap = articlesToMap(reviews);
   // alert(reviews.map(r => r.filmTitle).join('\n'));
   const mergedFilms = mergeFilmReviews(films, reviewsMap);
   injectModalStyles();
