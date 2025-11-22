@@ -148,15 +148,30 @@ function removeAccents(str) {
   return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
+function getWordsSet(phrase) {
+  const words = phrase.match(/\b\w+\b/g);
+  return new Set(words || []);
+}
+
+function isSubset(setA, setB) {
+  if (setA.size > setB.size) { return false; }
+  for (const elem of setA) {
+    if (!setB.has(elem)) { return false; }
+  }
+  return true;
+}
+
+function areWordsIncluded(str1, str2) {
+  const set1 = getWordsSet(str1);
+  const set2 = getWordsSet(str2);
+  return isSubset(set1, set2) || isSubset(set2, set1);
+}
+
 function findReview(title, reviewsMap){
     const filmTitleKey = makeFilmTitleKey(title);
     const matchingKey = Object.keys(reviewsMap)
-        .find(titleKey => areStringsIncluded(titleKey, filmTitleKey))
+        .find(titleKey => areWordsIncluded(titleKey, filmTitleKey))
     return reviewsMap[matchingKey];
-}
-
-function areStringsIncluded(str1, str2) {
-  return str1.includes(str2) || str2.includes(str1);
 }
 
 function mergeFilmReviews(filmData, reviewsMap) {
