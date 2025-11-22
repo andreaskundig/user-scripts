@@ -276,6 +276,9 @@ function injectModalStyles() {
     .film-title {
       font-size: 1.2em;
       margin-top: 20px;
+    }
+    .icon {
+      filter: grayscale(100%);
       cursor: pointer;
     }
     .film-review {
@@ -322,14 +325,23 @@ function createModal(films) {
   for (const film of films) {
     const filmHeader = document.createElement('div');
     filmHeader.className = 'film-title';
-    filmHeader.textContent = film.title;
+    filmHeader.textContent = film.title + ' ';
 
+    const showTimeButton = document.createElement('span');
+    showTimeButton.textContent = '⏰';
+    showTimeButton.className = 'icon';
+    filmHeader.appendChild(showTimeButton);
+      
     const filmReview = document.createElement('div');
     filmReview.className = 'film-review';
     if (film.review) {
-      filmReview.textContent = film.review.lead;
+      filmReview.textContent = film.review.lead + ' ';
+        const reviewLink = document.createElement('a');
+        reviewLink.textContent = '📰';
+        reviewLink.href = 'https://letemps.ch' + film.review.href;
+        filmReview.append(reviewLink);  
     }
-
+      
     const cinemaList = document.createElement('div');
     cinemaList.style.display = 'none';
 
@@ -352,8 +364,8 @@ function createModal(films) {
       e.preventDefault();
       cinemaList.style.display = (cinemaList.style.display === 'none') ? 'block' : 'none';
     };
-    filmHeader.addEventListener('click', toggleDisplay);
-    filmHeader.addEventListener('touchstart', toggleDisplay, { passive: false });
+    showTimeButton.addEventListener('click', toggleDisplay);
+    showTimeButton.addEventListener('touchstart', toggleDisplay, { passive: false });
 
     content.appendChild(filmHeader);
     content.appendChild(filmReview);
