@@ -278,7 +278,6 @@ function injectModalStyles() {
       margin-top: 20px;
     }
     .icon {
-      filter: grayscale(100%);
       cursor: pointer;
     }
     .film-review {
@@ -328,7 +327,7 @@ function createModal(films) {
     filmHeader.textContent = film.title + ' ';
 
     const showTimeButton = document.createElement('span');
-    showTimeButton.textContent = '⏰';
+    showTimeButton.textContent = '>';
     showTimeButton.className = 'icon';
     filmHeader.appendChild(showTimeButton);
       
@@ -337,7 +336,7 @@ function createModal(films) {
     if (film.review) {
       filmReview.textContent = film.review.lead + ' ';
         const reviewLink = document.createElement('a');
-        reviewLink.textContent = '📰';
+        reviewLink.textContent = '>>>';
         reviewLink.href = 'https://letemps.ch' + film.review.href;
         filmReview.append(reviewLink);  
     }
