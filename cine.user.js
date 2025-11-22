@@ -144,6 +144,21 @@ function compareFilms(a, b) {
   return 1;
 }
 
+function removeAccents(str) {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function findReview(title, reviewsMap){
+    const filmTitleKey = makeFilmTitleKey(title);
+    const matchingKey = Object.keys(reviewsMap)
+        .find(titleKey => areStringsIncluded(titleKey, filmTitleKey))
+    return reviewsMap[matchingKey];
+}
+
+function areStringsIncluded(str1, str2) {
+  return str1.includes(str2) || str2.includes(str1);
+}
+
 function mergeFilmReviews(filmData, reviewsMap) {
   const films = Object.entries(filmData).map(([title, cinemasObj]) => {
     const cinemas = Object.entries(cinemasObj)
@@ -154,8 +169,7 @@ function mergeFilmReviews(filmData, reviewsMap) {
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
     // Add review if available
-    const filmTitleKey = makeFilmTitleKey(title);
-    const review = reviewsMap[filmTitleKey];
+    const review = findReview(title, reviewsMap);
     const film = { title, cinemas };
     if (review) {
       film.review = review;
@@ -202,7 +216,7 @@ function parseArticles(htmlString) {
 
 function makeFilmTitleKey(filmTitle) {
   if (!filmTitle) return null;
-  return filmTitle.toLowerCase().replaceAll("’", "'");
+  return removeAccents(filmTitle).toLowerCase().replaceAll("’", "'");
 }
 
 function articlesToMap(articles) {
@@ -359,6 +373,8 @@ async function main(){
   films = await fetchAllFilms(urls);
   reviews = await fetchAllReviews();
   reviewsMap = articlesToMap(reviews);
+  // window.films = films;
+  // window.reviewsMap = reviewsMap;
   // alert(reviews.map(r => r.filmTitle).join('\n'));
   const mergedFilms = mergeFilmReviews(films, reviewsMap);
   injectModalStyles();
