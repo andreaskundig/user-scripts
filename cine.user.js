@@ -7,6 +7,27 @@
 // @author      -
 // @description 12.04.2025, 10:42:54
 // ==/UserScript==
+
+
+function nextDayLinks(prefixUrl, count = 7) {
+    const fileDetails = [];
+    let currentDate = new Date();
+    const frenchShortDays = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'];
+    for (let i = 0; i < count; i++) {
+        const year = currentDate.getFullYear();
+        const monthPadded = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const dayPadded = String(currentDate.getDate()).padStart(2, '0');
+        const path = `${prefixUrl}/${year}-${monthPadded}-${dayPadded}`;
+        const dayOfWeekShort = frenchShortDays[currentDate.getDay()];
+        const dayOfMonth = currentDate.getDate();
+        const monthNumber = currentDate.getMonth() + 1;
+        const name = `${dayOfWeekShort} ${dayOfMonth}.${monthNumber}`;
+        fileDetails.push({ path: path, name: name });
+        currentDate.setDate(currentDate.getDate() + 1); // Move to the next day
+    }
+    return fileDetails;
+}
+
 function findFilmArticles(dom = document) {
     const filmArticles = dom.querySelectorAll(".kino-show");
   const films = {};
@@ -390,21 +411,22 @@ function createModal(films) {
   document.body.appendChild(modal);
 }
 
-async function main(){
-  const urls = [
-    'https://search.ch/cine/Gen%C3%A8ve',
-    'https://search.ch/cine/Carouge'
-  ];
-  // global variables, accessible from the console
-  films = await fetchAllFilms(urls);
-  reviews = await fetchAllReviews();
-  reviewsMap = articlesToMap(reviews);
-  // window.films = films;
-  // window.reviewsMap = reviewsMap;
-  // alert(reviews.map(r => r.filmTitle).join('\n'));
-  const mergedFilms = mergeFilmReviews(films, reviewsMap);
-  injectModalStyles();
-  createModal(mergedFilms, reviewsMap);
+
+async function main() {
+    const urls = [
+        'https://search.ch/cine/Gen%C3%A8ve',
+        'https://search.ch/cine/Carouge'
+    ];
+    // global variables, accessible from the console
+    films = await fetchAllFilms(urls);
+    reviews = await fetchAllReviews();
+    reviewsMap = articlesToMap(reviews);
+    // window.films = films;
+    // window.reviewsMap = reviewsMap;
+    // alert(reviews.map(r => r.filmTitle).join('\n'));
+    const mergedFilms = mergeFilmReviews(films, reviewsMap);
+    injectModalStyles();
+    createModal(mergedFilms, reviewsMap);
 }
 
 main();
