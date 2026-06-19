@@ -8,24 +8,29 @@
 // @description 12.04.2025, 10:42:54
 // ==/UserScript==
 
+function formatDateSuffix(date){
+    const year = date.getFullYear();
+    const monthPadded = String(date.getMonth() + 1).padStart(2, '0');
+    const dayPadded = String(date.getDate()).padStart(2, '0');
+    return `${year}-${monthPadded}-${dayPadded}`;
+}
 
-function nextDayLinks(prefixUrl, count = 7) {
-    const fileDetails = [];
-    let currentDate = new Date();
+function formatDate(date) {
     const frenchShortDays = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'];
+    const dayOfWeekShort = frenchShortDays[date.getDay()];
+    const dayOfMonth = date.getDate();
+    const monthNumber = date.getMonth() + 1;
+    return `${dayOfWeekShort} ${dayOfMonth}.${monthNumber}`;
+}
+
+function nextDays(count = 7) {
+    const dates = [];
+    let currentDate = new Date();
     for (let i = 0; i < count; i++) {
-        const year = currentDate.getFullYear();
-        const monthPadded = String(currentDate.getMonth() + 1).padStart(2, '0');
-        const dayPadded = String(currentDate.getDate()).padStart(2, '0');
-        const path = `${prefixUrl}/${year}-${monthPadded}-${dayPadded}`;
-        const dayOfWeekShort = frenchShortDays[currentDate.getDay()];
-        const dayOfMonth = currentDate.getDate();
-        const monthNumber = currentDate.getMonth() + 1;
-        const name = `${dayOfWeekShort} ${dayOfMonth}.${monthNumber}`;
-        fileDetails.push({ path: path, name: name });
-        currentDate.setDate(currentDate.getDate() + 1); // Move to the next day
+        dates.push(new Date(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
     }
-    return fileDetails;
+    return dates;
 }
 
 function findFilmArticles(dom = document) {
@@ -296,12 +301,22 @@ function injectModalStyles() {
       overflow: auto;
       padding: 20px;
     }
+    .film-modal-obsolete {
+      color: grey;
+    }
     .film-modal-content {
       background: #222;
       padding: 20px;
       border-radius: 8px;
       max-width: 800px;
       margin: auto;
+    }
+    .day-selector{
+      background: #222;
+      border-color: #666 #999 #999 #666;
+      color: white;
+      border-radius: 8px;
+      padding: 5px 10px;
     }
     .film-close {
       float: right;
@@ -337,96 +352,120 @@ function injectModalStyles() {
   document.head.appendChild(style);
 }
 
-function createModal(films) {
-  const modal = document.createElement('div');
-  modal.className = 'film-modal';
+function createModalContent(films, dateSuffix, modal){
+    const content = document.createElement('div');
+    content.className = 'film-modal-content';
 
-  const content = document.createElement('div');
-  content.className = 'film-modal-content';
-
-  const close = document.createElement('span');
-  close.className = 'film-close';
-  close.innerHTML = '&times;';
-  const removeModal = (e) => {
-    e.preventDefault();
-    modal.remove();
-  };
-  close.addEventListener('click', removeModal);
-  close.addEventListener('touchstart', removeModal, { passive: false });
-
-
-  content.appendChild(close);
-
-  for (const film of films) {
-    const filmHeader = document.createElement('div');
-    filmHeader.className = 'film-title';
-    filmHeader.textContent = film.title + ' ';
-
-    const showTimeButton = document.createElement('span');
-    showTimeButton.textContent = '>';
-    showTimeButton.className = 'icon';
-    filmHeader.appendChild(showTimeButton);
-      
-    const filmReview = document.createElement('div');
-    filmReview.className = 'film-review';
-    if (film.review) {
-      filmReview.textContent = film.review.lead + ' ';
-        const reviewLink = document.createElement('a');
-        reviewLink.textContent = '>>>';
-        reviewLink.href = 'https://letemps.ch' + film.review.href;
-        filmReview.append(reviewLink);  
-    }
-      
-    const cinemaList = document.createElement('div');
-    cinemaList.style.display = 'none';
-
-    for (const cinema of film.cinemas) {
-      const cinemaDiv = document.createElement('div');
-      cinemaDiv.className = 'cinema';
-      const cinemaName = document.createElement('div');
-      cinemaName.innerHTML = `<strong>${cinema.name}</strong> (${cinema.language})`;
-
-      const times = document.createElement('div');
-      times.className = 'showtimes';
-      times.textContent = cinema.showtimes.join(', ');
-
-      cinemaDiv.appendChild(cinemaName);
-      cinemaDiv.appendChild(times);
-      cinemaList.appendChild(cinemaDiv);
-    }
-
-    const toggleDisplay =  (e) => {
-      e.preventDefault();
-      cinemaList.style.display = (cinemaList.style.display === 'none') ? 'block' : 'none';
+    const close = document.createElement('span');
+    close.className = 'film-close';
+    close.innerHTML = '&times;';
+    const removeModal = (e) => {
+        e.preventDefault();
+        modal.remove();
     };
-    showTimeButton.addEventListener('click', toggleDisplay);
-    showTimeButton.addEventListener('touchstart', toggleDisplay, { passive: false });
+    close.addEventListener('click', removeModal);
+    close.addEventListener('touchstart', removeModal, { passive: false });
 
-    content.appendChild(filmHeader);
-    content.appendChild(filmReview);
-    content.appendChild(cinemaList);
-  }
 
-  modal.appendChild(content);
-  document.body.appendChild(modal);
+    content.appendChild(close);
+
+    const daySelector = document.createElement('select');
+    daySelector.className = 'day-selector';
+    for (const date of nextDays()) {
+        const day = document.createElement('option');
+        const dateSuffixOption = formatDateSuffix(date);
+        day.value = dateSuffixOption;
+        day.innerHTML = formatDate(date);
+        day.selected = dateSuffixOption == dateSuffix; 
+        daySelector.appendChild(day);
+    }
+    daySelector.addEventListener('change', async function (event) {
+        const newDateSuffix = event.target.value;
+        content.classList.add('film-modal-obsolete');
+        const films = await fetchFilmsWithReviews(newDateSuffix);
+        const newContent = createModalContent(films, newDateSuffix, modal);
+        modal.removeChild(modal.firstChild);
+        modal.appendChild(newContent);
+    });
+    content.appendChild(daySelector);
+
+    for (const film of films) {
+        const filmHeader = document.createElement('div');
+        filmHeader.className = 'film-title';
+        filmHeader.textContent = film.title + ' ';
+
+        const showTimeButton = document.createElement('span');
+        showTimeButton.textContent = '>';
+        showTimeButton.className = 'icon';
+        filmHeader.appendChild(showTimeButton);
+
+        const filmReview = document.createElement('div');
+        filmReview.className = 'film-review';
+        if (film.review) {
+            filmReview.textContent = film.review.lead + ' ';
+            const reviewLink = document.createElement('a');
+            reviewLink.textContent = '>>>';
+            reviewLink.href = 'https://letemps.ch' + film.review.href;
+            filmReview.append(reviewLink);
+        }
+
+        const cinemaList = document.createElement('div');
+        cinemaList.style.display = 'none';
+
+        for (const cinema of film.cinemas) {
+            const cinemaDiv = document.createElement('div');
+            cinemaDiv.className = 'cinema';
+            const cinemaName = document.createElement('div');
+            cinemaName.innerHTML = `<strong>${cinema.name}</strong> (${cinema.language})`;
+
+            const times = document.createElement('div');
+            times.className = 'showtimes';
+            times.textContent = cinema.showtimes.join(', ');
+
+            cinemaDiv.appendChild(cinemaName);
+            cinemaDiv.appendChild(times);
+            cinemaList.appendChild(cinemaDiv);
+        }
+
+        const toggleDisplay = (e) => {
+            e.preventDefault();
+            cinemaList.style.display = (cinemaList.style.display === 'none') ? 'block' : 'none';
+        };
+        showTimeButton.addEventListener('click', toggleDisplay);
+        showTimeButton.addEventListener('touchstart', toggleDisplay, { passive: false });
+
+        content.appendChild(filmHeader);
+        content.appendChild(filmReview);
+        content.appendChild(cinemaList);
+    }
+    return content;
 }
 
+function createModal(films, dateSuffix) {
+    const modal = document.createElement('div');
+    modal.className = 'film-modal';
+    document.body.appendChild(modal);
+    const content = createModalContent(films, dateSuffix, modal);
+    modal.appendChild(content);
+}
 
-async function main() {
+async function fetchFilmsWithReviews(dateSuffix){
     const urls = [
-        'https://search.ch/cine/Gen%C3%A8ve',
-        'https://search.ch/cine/Carouge'
+        'https://search.ch/cine/Gen%C3%A8ve/' + dateSuffix,
+        'https://search.ch/cine/Carouge/' + dateSuffix
     ];
     // global variables, accessible from the console
     films = await fetchAllFilms(urls);
-    reviews = await fetchAllReviews();
-    reviewsMap = articlesToMap(reviews);
-    // window.films = films;
-    // window.reviewsMap = reviewsMap;
-    // alert(reviews.map(r => r.filmTitle).join('\n'));
-    const mergedFilms = mergeFilmReviews(films, reviewsMap);
+    reviewsList = await fetchAllReviews();
+    reviews = articlesToMap(reviewsList);
+    return mergeFilmReviews(films, reviews);
+}
+
+async function main() {
+    const dateSuffix = formatDateSuffix(new Date());
+    const films = await fetchFilmsWithReviews(dateSuffix);
     injectModalStyles();
-    createModal(mergedFilms, reviewsMap);
+    createModal(films, dateSuffix);
 }
 
 main();
