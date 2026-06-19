@@ -210,10 +210,10 @@ function parseArticles(htmlString) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlString, 'text/html');
   const articles = [];
-  const articleNodes = doc.querySelectorAll('article.post');
+  const articleNodes = doc.querySelectorAll('article');
   articleNodes.forEach(article => {
-    const titleAnchor = article.querySelector('.post__title a');
-    const lead = article.querySelector('.post__lead p');
+    const titleAnchor = article.querySelector('a');
+      const lead = article.querySelector('.lt-card-article__lead');
     if (titleAnchor) {
       const fullTitle = titleAnchor.textContent.trim();
       const filmTitle = reviewToFilmTitle(fullTitle);
