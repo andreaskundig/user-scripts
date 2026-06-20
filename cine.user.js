@@ -352,23 +352,7 @@ function injectModalStyles() {
   document.head.appendChild(style);
 }
 
-function createModalContent(films, dateSuffix, modal){
-    const content = document.createElement('div');
-    content.className = 'film-modal-content';
-
-    const close = document.createElement('span');
-    close.className = 'film-close';
-    close.innerHTML = '&times;';
-    const removeModal = (e) => {
-        e.preventDefault();
-        modal.remove();
-    };
-    close.addEventListener('click', removeModal);
-    close.addEventListener('touchstart', removeModal, { passive: false });
-
-
-    content.appendChild(close);
-
+function createDaySelector(films, dateSuffix, modal) {
     const daySelector = document.createElement('select');
     daySelector.className = 'day-selector';
     for (const date of nextDays()) {
@@ -387,6 +371,27 @@ function createModalContent(films, dateSuffix, modal){
         modal.removeChild(modal.firstChild);
         modal.appendChild(newContent);
     });
+    return daySelector;
+}
+
+function createModalContent(films, dateSuffix, modal){
+    const content = document.createElement('div');
+    content.className = 'film-modal-content';
+
+    const close = document.createElement('span');
+    close.className = 'film-close';
+    close.innerHTML = '&times;';
+    const removeModal = (e) => {
+        e.preventDefault();
+        modal.remove();
+    };
+    close.addEventListener('click', removeModal);
+    close.addEventListener('touchstart', removeModal, { passive: false });
+
+
+    content.appendChild(close);
+
+    const daySelector = createDaySelector(films, dateSuffix, modal);
     content.appendChild(daySelector);
 
     for (const film of films) {
@@ -402,7 +407,7 @@ function createModalContent(films, dateSuffix, modal){
         const filmReview = document.createElement('div');
         filmReview.className = 'film-review';
         if (film.review) {
-            filmReview.textContent = film.review.lead + ' ';
+            filmReview.textContent = `${film.review.title}. ${film.review.lead}. `;
             const reviewLink = document.createElement('a');
             reviewLink.textContent = '>>>';
             reviewLink.href = 'https://letemps.ch' + film.review.href;
