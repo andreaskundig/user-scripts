@@ -352,7 +352,7 @@ function injectModalStyles() {
   document.head.appendChild(style);
 }
 
-function createDaySelector(films, dateSuffix, modal) {
+function createDaySelector(films, dateSuffix, content, modal) {
     const daySelector = document.createElement('select');
     daySelector.className = 'day-selector';
     for (const date of nextDays()) {
@@ -391,7 +391,7 @@ function createModalContent(films, dateSuffix, modal){
 
     content.appendChild(close);
 
-    const daySelector = createDaySelector(films, dateSuffix, modal);
+    const daySelector = createDaySelector(films, dateSuffix, content, modal);
     content.appendChild(daySelector);
 
     for (const film of films) {
